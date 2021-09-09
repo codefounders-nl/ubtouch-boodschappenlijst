@@ -1,0 +1,15 @@
+{
+    "name": "test.leandro",
+    "description": "Test",
+    "architecture": "@CLICK_ARCH@",
+    "title": "Test",
+    "hooks": {
+        "TEst": {
+            "apparmor": "TEst.apparmor",
+            "desktop":  "TEst.desktop"
+        }
+    },
+    "version": "1.0.0",
+    "maintainer": "Leandro <leandro@mittere.ne>",
+    "framework" : "@CLICK_FRAMEWORK@"
+}
