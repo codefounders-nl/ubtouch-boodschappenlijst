@@ -30,8 +30,10 @@ MainView {
     width: units.gu(45)
     height: units.gu(75)
 
+
     Page {
         anchors.fill: parent
+        // var testModel = ["een", "twee", "drie"]
 
         header: PageHeader {
             id: header
@@ -58,21 +60,49 @@ MainView {
 
             Button {
                 id: button
-                text: "Click me"
-                onClicked: python.call('example.speak', ['gelukt!'], function(returnValue) {
+                text: "Add item"
+                onClicked: python.call('example.speak', [textField1.text], function(returnValue) {
                     console.log('example.speak returned ' + returnValue);
-                    textField1.text = returnValue
+                    textField1.text = returnValue;
+                    // e = ListElement("jajajaja");
+                    // e.name = textField1.text;
+                    mylist.append(
+                          {
+                            name: textField1.text
+                        }
+                    );
+                    // mylist.append(textField1.text);
+                    for (var i=0; i<mylist.length; i++) {
+                        console.log(i);
+                    }
                 })
+            }
+
+            ListModel {
+                id: mylist
+                ListElement {
+                    name: "Piet"
+                }
+                ListElement {
+                    name: "Jan"
+                }
+
             }
 
             ListView {
                 width: 180; height: 200
-                model: ['string1', 'string2']
+                // model: ['string1', 'string2']
+                model: mylist
                 delegate: Text {
-                    text: model.get(index)
+                    // text: testModel.get(index)
+                    text: "hoi " + name
                 }
+                moveDisplaced: Transition {
+                    NumberAnimation { properties: "x,y"; duration: 1000 }
+                }
+
             }
- 
+
         }
     }
 
@@ -89,6 +119,9 @@ MainView {
                     console.log('example.speak returned ' + returnValue);
                 })
             });
+            console.log("0 - INIT");
+            mylist.append("jaja");
+            mylist.append("neenee");
         }
 
         onError: {
