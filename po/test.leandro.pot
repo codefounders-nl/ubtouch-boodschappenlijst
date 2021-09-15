@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: test.leandro\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-09-14 17:39+0000\n"
+"POT-Creation-Date: 2021-09-15 00:11+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: ../qml/Main.qml:40
-msgid "Boodschappenlijst"
+msgid "Groceries"
 msgstr ""
 
 #: ../qml/Main.qml:52

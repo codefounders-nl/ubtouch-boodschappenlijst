@@ -37,7 +37,7 @@ MainView {
 
         header: PageHeader {
             id: header
-            title: i18n.tr('Boodschappenlijst')
+            title: i18n.tr('Groceries')
         }
 
         Column{
@@ -54,29 +54,40 @@ MainView {
                 horizontalAlignment: Label.AlignHCenter
             }
 
-            TextField {
-                id: textField1
+            Row {
+
+                TextField {
+                    id: textField1
+                }
+
+                Button {
+                    id: button
+                    text: "Add"
+                    onClicked: python.call('example.speak', [textField1.text], function(returnValue) {
+                        console.log('example.speak returned ' + returnValue);
+                        textField1.text = returnValue;
+                        // e = ListElement("jajajaja");
+                        // e.name = textField1.text;
+                        if (textField1.text == "" ) {
+                            return
+                        }
+                        mylist.append(
+                            {
+                                name: textField1.text
+                            }
+                        );
+                        textField1.text = "";
+                        // mylist.append(textField1.text);
+                        // for (var i=0; i<mylist.length; i++) {
+                        //     console.log(i);
+                        // }
+                    })
+                }
             }
 
-            Button {
-                id: button
-                text: "Add item"
-                onClicked: python.call('example.speak', [textField1.text], function(returnValue) {
-                    console.log('example.speak returned ' + returnValue);
-                    textField1.text = returnValue;
-                    // e = ListElement("jajajaja");
-                    // e.name = textField1.text;
-                    mylist.append(
-                          {
-                            name: textField1.text
-                        }
-                    );
-                    // mylist.append(textField1.text);
-                    for (var i=0; i<mylist.length; i++) {
-                        console.log(i);
-                    }
-                })
-            }
+            // check doc MouseArea met onclicked event,
+            // fotn kan aangpast worden zodat deze strike-through krijgt
+            // heet decoration
 
             ListModel {
                 id: mylist
@@ -95,11 +106,22 @@ MainView {
                 model: mylist
                 delegate: Text {
                     // text: testModel.get(index)
-                    text: "hoi " + name
+                     MouseArea {
+                        anchors.fill: parent
+                        onClicked: { 
+                            if (parent.font.strikeout == false) {
+                                parent.color = 'red'; parent.font.strikeout = true 
+                            } else {
+                                parent.color = 'black'; parent.font.strikeout = false 
+                            }
+                        }
+                    }
+                text: "O " + name
                 }
-                moveDisplaced: Transition {
-                    NumberAnimation { properties: "x,y"; duration: 1000 }
+                add: Transition {
+                    NumberAnimation { properties: "x,y"; from: 0; duration: 300 }
                 }
+                NumberAnimation on x { to: 50; from: 0; duration: 1000 }
 
             }
 
