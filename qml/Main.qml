@@ -37,10 +37,19 @@ MainView {
 
         header: PageHeader {
             id: header
-            title: i18n.tr('Groceries')
-        }
+            title: i18n.tr('Shopping list')
+            StyleHints {
+                    foregroundColor: UbuntuColors.black
+                    backgroundColor: "lightgrey"
+                    dividerColor: UbuntuColors.slate
+                }
+            }
 
         Column{
+            // x: 80
+            // y: 30
+            spacing: 10
+
             anchors {
                 top: header.bottom
                 left: parent.left
@@ -58,6 +67,7 @@ MainView {
 
                 TextField {
                     id: textField1
+                    maximumLength: 100
                 }
 
                 Button {
@@ -92,12 +102,8 @@ MainView {
             ListModel {
                 id: mylist
                 ListElement {
-                    name: "Piet"
+                    name: "Add some stuff"
                 }
-                ListElement {
-                    name: "Jan"
-                }
-
             }
 
             ListView {
@@ -110,7 +116,8 @@ MainView {
                         anchors.fill: parent
                         onClicked: { 
                             if (parent.font.strikeout == false) {
-                                parent.color = 'red'; parent.font.strikeout = true 
+                                parent.color = 'red'; parent.font.strikeout = true ;
+                                parent.background = 'black';
                             } else {
                                 parent.color = 'black'; parent.font.strikeout = false 
                             }
@@ -121,8 +128,36 @@ MainView {
                 add: Transition {
                     NumberAnimation { properties: "x,y"; from: 0; duration: 300 }
                 }
-                NumberAnimation on x { to: 50; from: 0; duration: 1000 }
+                // NumberAnimation on x { to: 50; from: 0; duration: 1000 }
 
+            }
+
+            Row {
+
+                Button {
+                    id: buttonRemoveAll
+                    text: "Remove all"
+                    onClicked: {
+                        mylist.clear()
+                    }
+                }
+
+                Button {
+                    id: buttonCleanup
+                    text: "Remove selected"
+                    onClicked: {
+                        console.log(mylist)
+                        // mylist.remove(0,1)
+                        console.log("list length " + mylist.count)
+                        for (var i=0; i<mylist.count; i++) {
+                            console.log("XXX " + mylist.get(i).attributes.get(0));
+                            if (mylist.get(i).parent.font.strikeout == true) {
+                                mylist.remove(i, 0);
+                            }
+                            console.log(i);
+                        }
+                    }
+                }
             }
 
         }
