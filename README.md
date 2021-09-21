@@ -1,6 +1,6 @@
-# Test
+# Shopping list
 
-Test
+This shopping list app for Ubuntu Touch is intended as a guide to show some basic techniques.
 
 ## License
 
