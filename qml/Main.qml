@@ -32,6 +32,7 @@ MainView {
 
 
     Page {
+        id: mainPage
         anchors.fill: parent
         // var testModel = ["een", "twee", "drie"]
 
@@ -45,11 +46,10 @@ MainView {
                 }
             }
 
-        Column{
-            // x: 80
-            // y: 30
-            spacing: 10
-
+        Column {
+            anchors.topMargin: 5
+            anchors.leftMargin: 10
+            
             anchors {
                 top: header.bottom
                 left: parent.left
@@ -57,86 +57,117 @@ MainView {
                 bottom: parent.bottom
             }
 
-            Label {
-                text: i18n.tr('Check the logs!')
-                verticalAlignment: Label.AlignVCenter
-                horizontalAlignment: Label.AlignHCenter
-            }
+            Column{
+                spacing: 10
 
-            Row {
-
-                TextField {
-                    id: textField1
-                    maximumLength: 100
+                anchors {
+                    top: parent.top
+                    left: parent.left
+                    right: parent.right
+                    bottom: bottomRow.top
                 }
 
-                Button {
-                    id: button
-                    text: "Add"
-                    onClicked: python.call('example.speak', [textField1.text], function(returnValue) {
-                        console.log('example.speak returned ' + returnValue);
-                        textField1.text = returnValue;
-                        // e = ListElement("jajajaja");
-                        // e.name = textField1.text;
-                        if (textField1.text == "" ) {
-                            return
+                Label {
+                    id: label
+                    text: i18n.tr('Check the logs!')
+                    verticalAlignment: Label.AlignVCenter
+                    horizontalAlignment: Label.AlignHCenter
+                }
+
+                Row {
+                    id: topRow
+                    spacing: 10
+
+                    TextField {
+                        id: textField1
+                        maximumLength: 100
+                        color: UbuntuColors.orange
+                        StyleHints {
+                            foregroundColor: UbuntuColors.black
+                            backgroundColor: "orange"
+                            dividerColor: UbuntuColors.red
                         }
-                        mylist.append(
-                            {
-                                name: textField1.text
-                            }
-                        );
-                        textField1.text = "";
-                        // mylist.append(textField1.text);
-                        // for (var i=0; i<mylist.length; i++) {
-                        //     console.log(i);
-                        // }
-                    })
-                }
-            }
 
-            // check doc MouseArea met onclicked event,
-            // fotn kan aangpast worden zodat deze strike-through krijgt
-            // heet decoration
-
-            ListModel {
-                id: mylist
-                ListElement {
-                    name: "Add some stuff"
-                }
-            }
-
-            ListView {
-                width: 180; height: 200
-                // model: ['string1', 'string2']
-                model: mylist
-                delegate: Text {
-                    // text: testModel.get(index)
-                     MouseArea {
-                        anchors.fill: parent
-                        onClicked: { 
-                            if (parent.font.strikeout == false) {
-                                parent.color = 'red'; parent.font.strikeout = true ;
-                                parent.background = 'black';
-                            } else {
-                                parent.color = 'black'; parent.font.strikeout = false 
-                            }
-                        }
                     }
-                text: "O " + name
+
+                    Button {
+                        id: button
+                        text: "Add"
+                        onClicked: python.call('example.speak', [textField1.text], function(returnValue) {
+                            console.log('example.speak returned ' + returnValue);
+                            textField1.text = returnValue;
+                            if (textField1.text == "" ) {
+                                return
+                            }
+                            mylist.append(
+                                {
+                                    "name": textField1.text,
+                                    "selected": false
+                                }
+                            );
+                        })
+                    }
                 }
-                add: Transition {
-                    NumberAnimation { properties: "x,y"; from: 0; duration: 300 }
+
+                // check doc MouseArea met onclicked event,
+                // fotn kan aangpast worden zodat deze strike-through krijgt
+                // heet decoration
+
+                ListModel {
+                    id: mylist
+                    ListElement {
+                        name: "Add some stuff"
+                        selected: false
+                    }
                 }
-                // NumberAnimation on x { to: 50; from: 0; duration: 1000 }
+
+                ListView {
+                    width: parent.width
+                    height: parent.height - label.height - topRow.height
+                    spacing: 5
+                    // model: ['string1', 'string2']
+                    model: mylist
+                    delegate: Text {
+                        // text: testModel.get(index)
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                mylist.get(index).selected = ! mylist.get(index).selected;
+                                if (mylist.get(index).selected == true) {
+                                    parent.color = 'red'; parent.font.strikeout = true ;
+                                    // parent.parent.parent.color = 'black';
+                                    console.log(parent.objectName);
+                                    console.log(parent.parent.objectName);
+                                    // Object.keys(parent).forEach((prop)=> console.log(prop));
+                                } else {
+                                    parent.color = 'black'; parent.font.strikeout = false 
+                                }
+                            }
+                        }
+                    text: "O " + name
+                    }
+                    add: Transition {
+                        NumberAnimation { properties: "x,y"; from: 0; duration: 300 }
+                    }
+                    // NumberAnimation on x { to: 50; from: 0; duration: 1000 }
+
+                }
+
 
             }
 
             Row {
+                id: bottomRow
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left 
+                anchors.right: parent.right
+                anchors.bottomMargin: 10
+                spacing: 10
 
                 Button {
                     id: buttonRemoveAll
                     text: "Remove all"
+                    anchors.bottom: parent.bottom
                     onClicked: {
                         mylist.clear()
                     }
@@ -145,21 +176,24 @@ MainView {
                 Button {
                     id: buttonCleanup
                     text: "Remove selected"
+                    anchors.right: parent.right
+                    anchors.rightMargin: 10
+                    anchors.bottom: parent.bottom
+
                     onClicked: {
                         console.log(mylist)
                         // mylist.remove(0,1)
                         console.log("list length " + mylist.count)
-                        for (var i=0; i<mylist.count; i++) {
-                            console.log("XXX " + mylist.get(i).attributes.get(0));
-                            if (mylist.get(i).parent.font.strikeout == true) {
-                                mylist.remove(i, 0);
+                        for (var i=mylist.count-1; i >= 0 ; i--) {
+                            // console.log("XXX " + mylist.get(i).attributes.get(0));
+                            if (mylist.get(i).selected == true) {
+                                mylist.remove(i);
                             }
                             console.log(i);
                         }
                     }
                 }
             }
-
         }
     }
 
