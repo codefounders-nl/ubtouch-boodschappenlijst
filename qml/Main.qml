@@ -14,7 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import QtQuick 2.7
+import QtQuick 2.12
+import QtQuick.LocalStorage 2.12
 import Ubuntu.Components 1.3
 //import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.3
@@ -30,11 +31,57 @@ MainView {
     width: units.gu(45)
     height: units.gu(75)
 
+    property string identifier: "ShoppingListDB"
+    property string version: "1.0"
+    property string description: "DB for shippoing list app"
+    property int    estimated_size: 10000
+
+    property var db: LocalStorage.openDatabaseSync(identifier, version, description, estimated_size)
+
+    function initShoppinglist() {
+
+        db.transaction(
+                function(tx) {
+                    // Create the database if it doesn't already exist
+                    tx.executeSql('CREATE TABLE IF NOT EXISTS ShoppingList(name TEXT, selected TEXT)');
+
+                    // Add (another) row
+                    tx.executeSql('INSERT INTO ShoppingList VALUES(?, ?)', [ 'Bread', 'false' ]);
+
+                    // Show all shopping list items
+                    var rs = tx.executeSql('SELECT * FROM ShoppingList');
+
+                    var r = ""
+                    for (var i = 0; i < rs.rows.length; i++) {
+                        r += rs.rows.item(i).name + ", " + rs.rows.item(i).selected + "\n"
+                        mylist.append(
+                            {
+                                "name": rs.rows.item(i).name,
+                                "selected": rs.rows.item(i).selected
+                            }
+                        )
+                    }
+                    console.log("XXXXXXXXXX " + r)
+                    // text = r
+                }
+            )
+        }
+
+    ListModel {
+        id: mylist
+        ListElement {
+            name: "Nothing here yet..."
+            selected: false
+        }
+    }
+
 
     Page {
         id: mainPage
         anchors.fill: parent
-        // var testModel = ["een", "twee", "drie"]
+        Component.onCompleted: { 
+            initShoppinglist()
+        } 
 
         header: PageHeader {
             id: header
@@ -58,18 +105,19 @@ MainView {
             }
 
             Column{
+                id: shoppingListItems
                 spacing: 10
 
                 anchors {
                     top: parent.top
                     left: parent.left
                     right: parent.right
-                    bottom: bottomRow.top
+                    bottom: parent.bottom
                 }
 
                 Label {
                     id: label
-                    text: i18n.tr('Check the logs!')
+                    text: i18n.tr("Don't forget this:")
                     verticalAlignment: Label.AlignVCenter
                     horizontalAlignment: Label.AlignHCenter
                 }
@@ -81,7 +129,7 @@ MainView {
                     TextField {
                         id: textField1
                         maximumLength: 100
-                        color: UbuntuColors.orange
+                        // color: UbuntuColors.orange
                         StyleHints {
                             foregroundColor: UbuntuColors.black
                             backgroundColor: "orange"
@@ -93,39 +141,27 @@ MainView {
                     Button {
                         id: button
                         text: "Add"
-                        onClicked: python.call('example.speak', [textField1.text], function(returnValue) {
-                            console.log('example.speak returned ' + returnValue);
-                            textField1.text = returnValue;
-                            if (textField1.text == "" ) {
-                                return
-                            }
-                            mylist.append(
-                                {
-                                    "name": textField1.text,
-                                    "selected": false
+                        onClicked:
+                            {
+                                if (textField1.text == "" ) {
+                                    return
                                 }
-                            );
-                        })
+                                mylist.append(
+                                    {
+                                        "name": textField1.text,
+                                        "selected": false
+                                    }
+                                )
+                            }
+                        // })
                     }
                 }
 
-                // check doc MouseArea met onclicked event,
-                // fotn kan aangpast worden zodat deze strike-through krijgt
-                // heet decoration
-
-                ListModel {
-                    id: mylist
-                    ListElement {
-                        name: "Add some stuff"
-                        selected: false
-                    }
-                }
-
+              
                 ListView {
                     width: parent.width
-                    height: parent.height - label.height - topRow.height
+                    height: parent.height - label.height - topRow.height - bottomRow.height
                     spacing: 5
-                    // model: ['string1', 'string2']
                     model: mylist
                     delegate: Text {
                         // text: testModel.get(index)
@@ -150,46 +186,44 @@ MainView {
                         NumberAnimation { properties: "x,y"; from: 0; duration: 300 }
                     }
                     // NumberAnimation on x { to: 50; from: 0; duration: 1000 }
-
                 }
 
-
-            }
-
-            Row {
-                id: bottomRow
-                anchors.bottom: parent.bottom
-                anchors.left: parent.left 
-                anchors.right: parent.right
-                anchors.bottomMargin: 10
-                spacing: 10
-
-                Button {
-                    id: buttonRemoveAll
-                    text: "Remove all"
+                Row {
+                    id: bottomRow
+                    // anchors.top: shoppingListItems.bottom
                     anchors.bottom: parent.bottom
-                    onClicked: {
-                        mylist.clear()
+                    // anchors.left: parent.left 
+                    // anchors.right: parent.right
+                    anchors.bottomMargin: 10
+                    spacing: 10
+
+                    Button {
+                        id: buttonRemoveAll
+                        text: "Remove all"
+                        anchors.bottom: parent.bottom
+                        onClicked: {
+                            mylist.clear()
+                        }
                     }
-                }
 
-                Button {
-                    id: buttonCleanup
-                    text: "Remove selected"
-                    anchors.right: parent.right
-                    anchors.rightMargin: 10
-                    anchors.bottom: parent.bottom
+                    Button {
+                        id: buttonCleanup
+                        text: "Remove selected"
+                        anchors.right: parent.right
+                        anchors.rightMargin: 10
+                        anchors.bottom: parent.bottom
 
-                    onClicked: {
-                        console.log(mylist)
-                        // mylist.remove(0,1)
-                        console.log("list length " + mylist.count)
-                        for (var i=mylist.count-1; i >= 0 ; i--) {
-                            // console.log("XXX " + mylist.get(i).attributes.get(0));
-                            if (mylist.get(i).selected == true) {
-                                mylist.remove(i);
+                        onClicked: {
+                            console.log(mylist)
+                            // mylist.remove(0,1)
+                            console.log("list length " + mylist.count)
+                            for (var i=mylist.count-1; i >= 0 ; i--) {
+                                // console.log("XXX " + mylist.get(i).attributes.get(0));
+                                if (mylist.get(i).selected == true) {
+                                    mylist.remove(i);
+                                }
+                                console.log(i);
                             }
-                            console.log(i);
                         }
                     }
                 }
@@ -197,26 +231,4 @@ MainView {
         }
     }
 
-
-    Python {
-        id: python
-
-        Component.onCompleted: {
-            addImportPath(Qt.resolvedUrl('../src/'));
-
-            importModule('example', function() {
-                console.log('module imported');
-                python.call('example.speak', ['Hello World!'], function(returnValue) {
-                    console.log('example.speak returned ' + returnValue);
-                })
-            });
-            console.log("0 - INIT");
-            mylist.append("jaja");
-            mylist.append("neenee");
-        }
-
-        onError: {
-            console.log('python error: ' + traceback);
-        }
-    }
 }
