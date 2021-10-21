@@ -137,7 +137,7 @@ MainView {
             mylist.append(
                 {
                     "rowid": rowid,
-                    "name": (name + " " + selected ),
+                    "name": name,
                     "selected": Boolean(selected)
                 }
             )
