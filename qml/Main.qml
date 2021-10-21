@@ -28,18 +28,24 @@ MainView {
     applicationName: 'test.leandro'
     automaticOrientation: true
 
-    // width: units.gu(45)
-    // height: units.gu(75)
-
-    property string identifier: "ShoppingListDB"
+    /////////////////////////////////////////////////////////////////////////
+    // Setup de DB connection
+    
+    property string dbName: "ShoppingListDB" // name of the physical file (with or without full path) 
     property string version: "1.0"
     property string description: "DB for shippoing list app"
     property int    estimated_size: 10000
+
+    property var db: LocalStorage.openDatabaseSync(dbName, version, description, estimated_size)
+
+
+    /////////////////////////////////////////////////////////////////////////
+    // Update shopping list View and DB
+    
     property string shoppingListTable: "ShoppingList"
 
-    property var db: LocalStorage.openDatabaseSync(identifier, version, description, estimated_size)
-
-    function initShoppinglist() {
+    // Init ListModel with previously stored data
+    function shoppinglist_init() {
 
         db.transaction(
             function(tx) {
@@ -47,64 +53,62 @@ MainView {
                 // tx.executeSql('DROP TABLE ' + shoppingListTable);
                 tx.executeSql('CREATE TABLE IF NOT EXISTS ' + shoppingListTable + ' (name TEXT, selected BOOLEAN)');
 
-                // Add (another) row
-                // tx.executeSql('INSERT INTO ' + shoppingListTable + ' VALUES(?, ?)', [ 'Bread', 'false' ]);
+                // Get data from DB
+                var rs = tx.executeSql('SELECT rowid, name, selected FROM ' + shoppingListTable);
 
-                // Show all shopping list items
-                var rs = tx.executeSql('SELECT * FROM ' + shoppingListTable);
-
-                var r = ""
+                // Update ListModel
                 for (var i = 0; i < rs.rows.length; i++) {
-                    console.log(i)
-                    r += rs.rows.item(i).name + ", " + rs.rows.item(i).selected + "\n"
-                    appendTo_myList(rs.rows.item(i).name, Boolean(rs.rows.item(i).selected))
-                    // mylist.append(
-                    //     {
-                    //         "name": rs.rows.item(i).name,
-                    //         "selected": Boolean(rs.rows.item(i).selected) // assign as boolean
-                    //     }
-                    // )
-                    // mylist.get(i).parent.color = 'red';
-                    //  mylist.get(i).parent.font.strikeout = 1 ;
+                    console.log(i, "", rs.rows.item(i).name, rs.rows.item(i).rowid)
+                    appendToListModel_myList(rs.rows.item(i).rowid, rs.rows.item(i).name, Boolean(rs.rows.item(i).selected))
                 }
-                console.log("XXXXXXXXXX " + r)
-                // text = r
             }
         )
     }
 
-    function clearShoppinglist() {
+    function shoppinglist_clear() {
         // Update DB
         db.transaction(
             function(tx) {
                 tx.executeSql('DELETE FROM ' + shoppingListTable)
             }
         )
-        // Update View
+        // Update ListModel
         mylist.clear()
     }
 
-    function addItemToShoppinglist(name, selected) {
+    function shoppinglist_addItem(name, selected) {
+        var result
         // Update DB
         db.transaction(
             function(tx) {
-                tx.executeSql('INSERT INTO ' + shoppingListTable + ' VALUES(?, ?)', [ name, selected ]);
+                result = tx.executeSql('INSERT INTO ' + shoppingListTable + ' (name, selected) VALUES( ?, ? )', [name, selected]);
             }
         )
-        // Update View
-        // mylist.append(item)
-        appendTo_myList(name, selected)
+        // Update ListModel
+        appendToListModel_myList(result[1], name, selected)
         console.log(name, " ", selected)
     }
 
-    function removeSelectedItemsFromShoppinglist() {
+    function shoppinglist_updateSelectionStatus(listIndex, dbRowid, selected) {
+        console.log("UPDATE ", listIndex, " ", dbRowid, " ", selected)
         // Update DB
         db.transaction(
             function(tx) {
-                tx.executeSql('DELETE FROM ' + shoppingListTable + ' WHERE selected = ' + Boolean(true))
+                tx.executeSql('UPDATE ' + shoppingListTable + ' SET selected=? WHERE rowid=?', [Boolean(selected), dbRowid])
             }
         )
-        // Update View
+        // Update ListModel
+        mylist.get(listIndex).selected = ! mylist.get(listIndex).selected;
+    }
+
+    function shoppinglist_removeSelectedItems() {
+        // Update DB
+        db.transaction(
+            function(tx) {
+                tx.executeSql('DELETE FROM ' + shoppingListTable + ' WHERE selected=?', [Boolean(true)])
+            }
+        )
+        // Update ListModel
         for (var i=mylist.count-1; i >= 0 ; i--) {
             if (mylist.get(i).selected == true) {
                 mylist.remove(i);
@@ -112,7 +116,9 @@ MainView {
         }
     }
 
-
+    /////////////////////////////////////////////////////////////////////////
+    // Define the ListModel to store the items
+    
     ListModel {
         id: mylist
         // ListElement {
@@ -121,22 +127,25 @@ MainView {
         // }
     }
 
-    function appendTo_myList(name, selected) {
-        console.log("XXX ", name, " ", selected)
+    function appendToListModel_myList(rowid, name, selected) {
+        console.log("XXX ", rowid, " ", name, " ", selected)
         mylist.append(
             {
+                "rowid": rowid,
                 "name": name,
                 "selected": Boolean(selected)
             }
         )
     }
 
+    /////////////////////////////////////////////////////////////////////////
+    // Define the page elements and their functionality
 
     Page {
         id: mainPage
         anchors.fill: parent
         Component.onCompleted: { 
-            initShoppinglist()
+            shoppinglist_init()
         } 
 
         header: PageHeader {
@@ -213,14 +222,7 @@ MainView {
                                 if (textFieldInput.text == "" ) {
                                     return
                                 }
-                                // appendTo_myList(textFieldInput.text, false)
-                                addItemToShoppinglist(textFieldInput.text, false)
-                                // addItemToShoppinglist(
-                                //     {
-                                //         "name": textFieldInput.text,
-                                //         "selected": false
-                                //     }
-                                // )
+                                shoppinglist_addItem(textFieldInput.text, false)
                             }
                     }
                 }
@@ -244,8 +246,12 @@ MainView {
                             anchors.fill: parent
                             onClicked: {
                                 console.log(mylist.get(index).selected)
-                                console.log(mylist.get(index).name)
-                                mylist.get(index).selected = ! mylist.get(index).selected;
+                                console.log("SELECTED ", JSON.stringify(mylist.get(index)))
+                                for (const prop in parent) {
+                                  console.log("PARENT ", prop)
+                                }
+                                shoppinglist_updateSelectionStatus(index, mylist.get(index).rowid, ! mylist.get(index).selected)
+                                // mylist.get(index).selected = ! mylist.get(index).selected;
                                 if (mylist.get(index).selected == true) {
                                     parent.color = 'red'; parent.font.strikeout = true ;
                                     // parent.parent.parent.color = 'black';
@@ -281,7 +287,7 @@ MainView {
                         anchors.bottom: parent.bottom
                         onClicked: {
                             // mylist.clear()
-                            clearShoppinglist()
+                            shoppinglist_clear()
                         }
                     }
 
@@ -303,7 +309,7 @@ MainView {
                             //     }
                             //     console.log(i);
                             // }
-                            removeSelectedItemsFromShoppinglist()
+                            shoppinglist_removeSelectedItems()
                         }
                     }
                 }
