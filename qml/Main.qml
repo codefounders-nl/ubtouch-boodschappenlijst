@@ -169,6 +169,14 @@ MainView {
                 }
             }
 
+        Item {
+            anchors.top: header.bottom
+            anchors.leftMargin: units.gu(1)
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            // color: "lime"
+
         // Column {
         //     anchors.topMargin: 5
         //     anchors.leftMargin: 10
@@ -191,9 +199,16 @@ MainView {
             //         right: parent.right
             //     }
 
+
+// 1. grid units toevoegen ipv absolute getallen
+// 2. check raar phone gedrag mbt DB
+// 3. cleanup
+// 4. Remove all button (met puntjes?): "Remove all shopping items?" Remove / Cancel
+// 5. Terence: post UI guidelines
                 Label {
                     id: label
-                    anchors.top: header.bottom
+                    anchors.top: parent.top
+                    anchors.topMargin: units.gu(1)
                     text: i18n.tr("Don't forget this:")
                     verticalAlignment: Label.AlignVCenter
                     horizontalAlignment: Label.AlignHCenter
@@ -253,9 +268,9 @@ MainView {
                     width: parent.width
                     // height: parent.height - label.height - topRow.height - bottomRow.height
                     anchors.top: topRow.bottom
-                    anchors.topMargin: 10
+                    anchors.topMargin: 15
                     anchors.bottom: bottomRow.top
-                    anchors.bottomMargin: 10
+                    anchors.bottomMargin: 15
                     spacing: 5
                     model: mylist
                     delegate: Text {
@@ -330,7 +345,7 @@ MainView {
                     }
                 }
             // }
-        // }
+        }
     }
 
 }
