@@ -59,13 +59,13 @@ MainView {
                 // Update ListModel
                 for (var i = 0; i < rs.rows.length; i++) {
                     console.log(i, "", rs.rows.item(i).name, rs.rows.item(i).rowid)
-                    appendToListModel_myList(rs.rows.item(i).rowid, rs.rows.item(i).name, Boolean(rs.rows.item(i).selected))
+                    mylist.appendItem(rs.rows.item(i).rowid, rs.rows.item(i).name, Boolean(rs.rows.item(i).selected))
                 }
             }
         )
     }
 
-    function shoppinglist_clear() {
+    function shoppinglist_removeAll() {
         // Update DB
         db.transaction(
             function(tx) {
@@ -85,7 +85,7 @@ MainView {
             }
         )
         // Update ListModel
-        appendToListModel_myList(result[1], name, selected)
+        mylist.appendItem(result[1], name, selected)
         console.log(name, " ", selected)
     }
 
@@ -98,7 +98,11 @@ MainView {
             }
         )
         // Update ListModel
-        mylist.get(listIndex).selected = ! mylist.get(listIndex).selected;
+        // mylist.set(listIndex, {"selected": selected});
+        mylist.setSelected(listIndex, selected)
+        // // Refresh the list to update the selected status
+        // listview.refresh()
+        // mylist.sync()
     }
 
     function shoppinglist_removeSelectedItems() {
@@ -121,21 +125,28 @@ MainView {
     
     ListModel {
         id: mylist
+
+        function setSelected(index, value) {
+            mylist.get(index).selected = Boolean(value)
+            // Refresh the view to show the change
+            listview.refresh()
+        }
+
+        function appendItem(rowid, name, selected) {
+            console.log("XXX ", rowid, " ", name, " ", selected)
+            mylist.append(
+                {
+                    "rowid": rowid,
+                    "name": name,
+                    "selected": Boolean(selected)
+                }
+            )
+        }
+
         // ListElement {
         //     name: "Nothing here yet..."
         //     selected: false
         // }
-    }
-
-    function appendToListModel_myList(rowid, name, selected) {
-        console.log("XXX ", rowid, " ", name, " ", selected)
-        mylist.append(
-            {
-                "rowid": rowid,
-                "name": name,
-                "selected": Boolean(selected)
-            }
-        )
     }
 
     /////////////////////////////////////////////////////////////////////////
@@ -232,6 +243,13 @@ MainView {
             //     anchors.bottom: parent.bottom
 
                 ListView {
+                    id: listview
+                    function refresh() {
+                        // Refresh the list to update the selected status
+                        var tmp = model
+                        model = null
+                        model = tmp
+                    }
                     width: parent.width
                     // height: parent.height - label.height - topRow.height - bottomRow.height
                     anchors.top: topRow.bottom
@@ -242,25 +260,23 @@ MainView {
                     model: mylist
                     delegate: Text {
                         // text: testModel.get(index)
+                        color: mylist.get(index).selected ?'red' : 'black'
+                        font{strikeout: mylist.get(index).selected}
                         MouseArea {
                             anchors.fill: parent
                             onClicked: {
                                 console.log(mylist.get(index).selected)
                                 console.log("SELECTED ", JSON.stringify(mylist.get(index)))
-                                for (const prop in parent) {
-                                  console.log("PARENT ", prop)
-                                }
                                 shoppinglist_updateSelectionStatus(index, mylist.get(index).rowid, ! mylist.get(index).selected)
                                 // mylist.get(index).selected = ! mylist.get(index).selected;
-                                if (mylist.get(index).selected == true) {
-                                    parent.color = 'red'; parent.font.strikeout = true ;
-                                    // parent.parent.parent.color = 'black';
-                                    console.log(parent.objectName);
-                                    console.log(parent.parent.objectName);
+                                // if (mylist.get(index).selected == true) {
+                                    // parent.color = 'red'; parent.font.strikeout = true ;
+                                    // console.log(parent.objectName);
+                                    // console.log(parent.parent.objectName);
                                     // Object.keys(parent).forEach((prop)=> console.log(prop));
-                                } else {
-                                    parent.color = 'black'; parent.font.strikeout = false 
-                                }
+                                // } else {
+                                    // parent.color = 'black'; parent.font.strikeout = false 
+                                // }
                             }
                         }
                     text: "O " + name
@@ -287,7 +303,7 @@ MainView {
                         anchors.bottom: parent.bottom
                         onClicked: {
                             // mylist.clear()
-                            shoppinglist_clear()
+                            shoppinglist_removeAll()
                         }
                     }
 
