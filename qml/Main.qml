@@ -17,6 +17,7 @@
 import QtQuick 2.12
 import QtQuick.LocalStorage 2.12
 import Ubuntu.Components 1.3
+import Ubuntu.Components.Popups 1.3
 //import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.3
 import Qt.labs.settings 1.0
@@ -29,14 +30,22 @@ MainView {
     automaticOrientation: true
 
     /////////////////////////////////////////////////////////////////////////
+    // General properties
+
+    property int    size0_5GridUnit: units.gu(0.5)
+    property int    size1GridUnit: units.gu(1)
+    property int    size1_5GridUnit: units.gu(1.5)
+    property int    size2GridUnit: units.gu(2)
+
+    /////////////////////////////////////////////////////////////////////////
     // Setup de DB connection
-    
+  
     property string dbName: "ShoppingListDB" // name of the physical file (with or without full path) 
     property string version: "1.0"
     property string description: "DB for shippoing list app"
     property int    estimated_size: 10000
 
-    property var db: LocalStorage.openDatabaseSync(dbName, version, description, estimated_size)
+    property var    db: LocalStorage.openDatabaseSync(dbName, version, description, estimated_size)
 
 
     /////////////////////////////////////////////////////////////////////////
@@ -47,10 +56,11 @@ MainView {
     // Init ListModel with previously stored data
     function shoppinglist_init() {
 
-        db.transaction(
-            function(tx) {
-                // Create the database if it doesn't already exist
+        db.transaction(function(tx) {
+                // ToDo: add DB version check
                 // tx.executeSql('DROP TABLE ' + shoppingListTable);
+
+                // Create the database if it doesn't already exist
                 tx.executeSql('CREATE TABLE IF NOT EXISTS ' + shoppingListTable + ' (name TEXT, selected BOOLEAN)');
 
                 // Get data from DB
@@ -67,8 +77,7 @@ MainView {
 
     function shoppinglist_removeAll() {
         // Update DB
-        db.transaction(
-            function(tx) {
+        db.transaction(function(tx) {
                 tx.executeSql('DELETE FROM ' + shoppingListTable)
             }
         )
@@ -79,8 +88,7 @@ MainView {
     function shoppinglist_addItem(name, selected) {
         var result
         // Update DB
-        db.transaction(
-            function(tx) {
+        db.transaction(function(tx) {
                 result = tx.executeSql('INSERT INTO ' + shoppingListTable + ' (name, selected) VALUES( ?, ? )', [name, selected]);
             }
         )
@@ -92,8 +100,7 @@ MainView {
     function shoppinglist_updateSelectionStatus(listIndex, dbRowid, selected) {
         console.log("UPDATE ", listIndex, " ", dbRowid, " ", selected)
         // Update DB
-        db.transaction(
-            function(tx) {
+        db.transaction(function(tx) {
                 tx.executeSql('UPDATE ' + shoppingListTable + ' SET selected=? WHERE rowid=?', [Boolean(selected), dbRowid])
             }
         )
@@ -107,8 +114,7 @@ MainView {
 
     function shoppinglist_removeSelectedItems() {
         // Update DB
-        db.transaction(
-            function(tx) {
+        db.transaction(function(tx) {
                 tx.executeSql('DELETE FROM ' + shoppingListTable + ' WHERE selected=?', [Boolean(true)])
             }
         )
@@ -149,6 +155,92 @@ MainView {
         // }
     }
 
+  
+    Component {
+        id: messageComponent
+        Popover {
+            id: popover
+            Column {
+                id: containerLayout
+                anchors {
+                    left: parent.left
+                    top: parent.top
+                    right: parent.right
+                }
+                // there is no equivalent yet to ListItem.Header
+                // Old_ListItem.Header { text: "Standard list items" }
+                ListItem {
+                    // shall specify the height when Using ListItemLayout inside ListItem
+                    height: somethingLayout.height + (divider.visible ? divider.height : 0)
+                    ListItemLayout {
+                        id: somethingLayout
+                        title.text: "Do somethings"
+                    }
+                    onClicked: console.log("clicked on ListItem with onClicked implemented")
+                }
+                ListItem {
+                    // shall specify the height when Using ListItemLayout inside ListItem
+                    height: somethingElseLayout.height + (divider.visible ? divider.height : 0)
+                    ListItemLayout {
+                        id: somethingElseLayout
+                        title.text: "Do somethings"
+                        subtitle.text: "else"
+                    }
+                }
+                ListItem {
+                    // shall specify the height when Using ListItemLayout inside ListItem
+                    height: closeBtn.height + (divider.visible ? divider.height : 0)
+                    Button {
+                        id: closeBtn
+                        text: "Close button"
+                        onClicked: PopupUtils.close(popover);
+                    }
+                }
+            }
+        }
+    }
+
+    // Component {
+    //     id: dialog
+    //     Dialog {
+    //         id: dialogue
+    //         title: "Remove all items"
+    //         text: "Are you sure to remove all items?"
+    //         Button {
+    //             text: "Remove"
+    //             color: theme.palette.normal.negative
+    //             onClicked: {
+    //                 PopupUtils.close(dialogue)
+    //                 shoppinglist_removeAll()
+    //             }
+    //         }
+    //         Button {
+    //             text: "Cancel"
+    //             onClicked: PopupUtils.close(dialogue)
+    //         }
+    //     }
+    // }
+
+    Component{
+        id: removeAllDialog
+        MyDialog{
+            title: "Remove all items"
+            text: "Are you sure?"
+            buttonText: "Remove all items"
+            onDoAction: shoppinglist_removeAll()
+        }
+    }
+
+    Component{
+        id: removeSelectedDialog
+        MyDialog{
+            title: "Remove selected items"
+            text: "Are you sure?"
+            buttonText: "Remove selected items"
+            onDoAction: shoppinglist_removeSelectedItems()
+        }
+    }
+
     /////////////////////////////////////////////////////////////////////////
     // Define the page elements and their functionality
 
@@ -171,180 +263,142 @@ MainView {
 
         Item {
             anchors.top: header.bottom
-            anchors.leftMargin: units.gu(1)
+            anchors.leftMargin: size1GridUnit
             anchors.bottom: parent.bottom
             anchors.left: parent.left
             anchors.right: parent.right
-            // color: "lime"
 
-        // Column {
-        //     anchors.topMargin: 5
-        //     anchors.leftMargin: 10
-            
-        //     anchors {
-        //         top: header.bottom
-        //         left: parent.left
-        //         right: parent.right
-        //         bottom: parent.bottom
-        //     }
-
-            // Column{
-            //     id: shoppingListItems
-            //     spacing: 10
-            //     anchors.top: parent.top
-            //     anchors.bottom: parent.bottom
-
-            //     anchors {
-            //         left: parent.left
-            //         right: parent.right
-            //     }
+            Label {
+                id: label
+                anchors.top: parent.top
+                anchors.topMargin: size1GridUnit
+                text: i18n.tr("Don't forget this:")
+                verticalAlignment: Label.AlignVCenter
+                horizontalAlignment: Label.AlignHCenter
+            }
 
 
-// 1. grid units toevoegen ipv absolute getallen
-// 2. check raar phone gedrag mbt DB
-// 3. cleanup
-// 4. Remove all button (met puntjes?): "Remove all shopping items?" Remove / Cancel
-// 5. Terence: post UI guidelines
-                Label {
-                    id: label
-                    anchors.top: parent.top
-                    anchors.topMargin: units.gu(1)
-                    text: i18n.tr("Don't forget this:")
-                    verticalAlignment: Label.AlignVCenter
-                    horizontalAlignment: Label.AlignHCenter
-                }
+            Row {
+                id: topRow
+                height: textFieldInput.height // define height of this row, else the ListView will overwrite the row
+                anchors.top: label.bottom
+                anchors.topMargin: size1GridUnit
+                anchors.left: parent.left
+                anchors.right: parent.right
+                // spacing: size1GridUnit
+                // color: "lime"
 
-                Row {
-                    id: topRow
-                    anchors.top: label.bottom
-                    anchors.topMargin: 10
+                TextField {
+                    id: textFieldInput
                     anchors.left: parent.left
+                    anchors.right: buttonAdd.left
+                    anchors.leftMargin: size1GridUnit
+                    anchors.rightMargin: size2GridUnit
+                    // maximumLength: 100B
+                    // color: UbuntuColors.orange
+                    StyleHints {
+                        foregroundColor: UbuntuColors.black
+                        backgroundColor: "orange"
+                        dividerColor: UbuntuColors.red
+                    }
+
+                }
+
+                Button {
+                    id: buttonAdd
                     anchors.right: parent.right
-                    spacing: 10
-
-                    TextField {
-                        id: textFieldInput
-                        // anchors.left: parent.left
-                        // anchors.right: buttonAdd.left
-                        anchors.leftMargin: 20
-                        anchors.rightMargin: 20
-                        // maximumLength: 100B
-                        // color: UbuntuColors.orange
-                        StyleHints {
-                            foregroundColor: UbuntuColors.black
-                            backgroundColor: "orange"
-                            dividerColor: UbuntuColors.red
-                        }
-
-                    }
-
-                    Button {
-                        id: buttonAdd
-                        // anchors.right: parent.right
-                        anchors.rightMargin: 20
-                        text: "Add"
-                        onClicked:
-                            {
-                                if (textFieldInput.text == "" ) {
-                                    return
-                                }
-                                shoppinglist_addItem(textFieldInput.text, false)
+                    anchors.rightMargin: size2GridUnit
+                    text: "Add"
+                    onClicked:
+                        {
+                            if (textFieldInput.text == "" ) {
+                                return
                             }
-                    }
-                }
-
-            //   Row {
-            //     anchors.top: topRow.bottom
-            //     anchors.bottom: parent.bottom
-
-                ListView {
-                    id: listview
-                    function refresh() {
-                        // Refresh the list to update the selected status
-                        var tmp = model
-                        model = null
-                        model = tmp
-                    }
-                    width: parent.width
-                    // height: parent.height - label.height - topRow.height - bottomRow.height
-                    anchors.top: topRow.bottom
-                    anchors.topMargin: 15
-                    anchors.bottom: bottomRow.top
-                    anchors.bottomMargin: 15
-                    spacing: 5
-                    model: mylist
-                    delegate: Text {
-                        // text: testModel.get(index)
-                        color: mylist.get(index).selected ?'red' : 'black'
-                        font{strikeout: mylist.get(index).selected}
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                console.log(mylist.get(index).selected)
-                                console.log("SELECTED ", JSON.stringify(mylist.get(index)))
-                                shoppinglist_updateSelectionStatus(index, mylist.get(index).rowid, ! mylist.get(index).selected)
-                                // mylist.get(index).selected = ! mylist.get(index).selected;
-                                // if (mylist.get(index).selected == true) {
-                                    // parent.color = 'red'; parent.font.strikeout = true ;
-                                    // console.log(parent.objectName);
-                                    // console.log(parent.parent.objectName);
-                                    // Object.keys(parent).forEach((prop)=> console.log(prop));
-                                // } else {
-                                    // parent.color = 'black'; parent.font.strikeout = false 
-                                // }
-                            }
+                            shoppinglist_addItem(textFieldInput.text, false)
                         }
-                    text: "O " + name
-                    }
-                    add: Transition {
-                        NumberAnimation { properties: "x,y"; from: 0; duration: 300 }
-                    }
-                    // NumberAnimation on x { to: 50; from: 0; duration: 1000 }
                 }
-            //   }
+            }
 
-                Row {
-                    id: bottomRow
-                    // anchors.top: shoppingListItems.bottom
+            ListView {
+                id: listview
+                function refresh() {
+                    // Refresh the list to update the selected status
+                    var tmp = model
+                    model = null
+                    model = tmp
+                }
+                width: parent.width
+                // height: parent.height - label.height - topRow.height - bottomRow.height
+                anchors.top: topRow.bottom
+                anchors.topMargin: size1_5GridUnit
+                anchors.bottom: bottomRow.top
+                anchors.bottomMargin: size1_5GridUnit
+                spacing: size0_5GridUnit
+                model: mylist
+                delegate: Text {
+                    // text: testModel.get(index)
+                    color: mylist.get(index).selected ?'red' : 'black'
+                    font{strikeout: mylist.get(index).selected}
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            console.log(mylist.get(index).selected)
+                            console.log("SELECTED ", JSON.stringify(mylist.get(index)))
+                            shoppinglist_updateSelectionStatus(index, mylist.get(index).rowid, ! mylist.get(index).selected)
+                        }
+                    }
+                text: "O " + name
+                }
+                add: Transition {
+                    NumberAnimation { properties: "x,y"; from: 0; duration: 300 }
+                }
+                // NumberAnimation on x { to: 50; from: 0; duration: 1000 }
+            }
+
+            Row {
+                id: bottomRow
+                height: buttonRemoveAll.height
+                // anchors.top: shoppingListItems.bottom
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left 
+                anchors.right: parent.right
+                anchors.bottomMargin: size1GridUnit
+                spacing: size1GridUnit
+
+                Button {
+                    id: buttonRemoveAll
+                    text: "Remove all..."
                     anchors.bottom: parent.bottom
-                    anchors.left: parent.left 
-                    anchors.right: parent.right
-                    anchors.bottomMargin: 10
-                    spacing: 10
-
-                    Button {
-                        id: buttonRemoveAll
-                        text: "Remove all"
-                        anchors.bottom: parent.bottom
-                        onClicked: {
-                            // mylist.clear()
-                            shoppinglist_removeAll()
-                        }
-                    }
-
-                    Button {
-                        id: buttonCleanup
-                        text: "Remove selected"
-                        // anchors.right: parent.right
-                        anchors.rightMargin: 10
-                        anchors.bottom: parent.bottom
-
-                        onClicked: {
-                            console.log(mylist)
-                            // mylist.remove(0,1)
-                            console.log("list length " + mylist.count)
-                            // for (var i=mylist.count-1; i >= 0 ; i--) {
-                            //     // console.log("XXX " + mylist.get(i).attributes.get(0));
-                            //     if (mylist.get(i).selected == true) {
-                            //         mylist.remove(i);
-                            //     }
-                            //     console.log(i);
-                            // }
-                            shoppinglist_removeSelectedItems()
-                        }
+                    onClicked: {
+                        // mylist.clear()
+                        PopupUtils.open(removeAllDialog)
+                        // shoppinglist_removeAll()
                     }
                 }
-            // }
+
+                Button {
+                    id: buttonCleanup
+                    text: "Remove selected..."
+                    // anchors.right: parent.right
+                    anchors.rightMargin: size1GridUnit
+                    anchors.bottom: parent.bottom
+
+                    onClicked: {
+                        console.log(mylist)
+                        // mylist.remove(0,1)
+                        console.log("list length " + mylist.count)
+                        PopupUtils.open(removeSelectedDialog)
+                        // for (var i=mylist.count-1; i >= 0 ; i--) {
+                        //     // console.log("XXX " + mylist.get(i).attributes.get(0));
+                        //     if (mylist.get(i).selected == true) {
+                        //         mylist.remove(i);
+                        //     }
+                        //     console.log(i);
+                        // }
+                        // shoppinglist_removeSelectedItems()
+                    }
+                }
+            }
         }
     }
 
