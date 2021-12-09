@@ -72,7 +72,8 @@ MainView {
                 // Update ListModel
                 for (var i = 0; i < rs.rows.length; i++) {
                     console.log(i, "", rs.rows.item(i).name, rs.rows.item(i).rowid)
-                    mylist.appendItem(rs.rows.item(i).rowid, rs.rows.item(i).name, Boolean(rs.rows.item(i).selected), 0)
+                    var newItem = mylist.appendItem(rs.rows.item(i).rowid, rs.rows.item(i).name, Boolean(rs.rows.item(i).selected), 0)
+                    getItemPrice(newItem)
                 }
             }
         )
@@ -155,7 +156,8 @@ MainView {
                     "price": price
                 }
             mylist.append(item)
-            return item
+            var newItem = mylist.get(mylist.count-1)
+            return newItem
         }
 
         // ListElement {
