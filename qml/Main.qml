@@ -72,7 +72,7 @@ MainView {
                 // Update ListModel
                 for (var i = 0; i < rs.rows.length; i++) {
                     console.log(i, "", rs.rows.item(i).name, rs.rows.item(i).rowid)
-                    mylist.appendItem(rs.rows.item(i).rowid, rs.rows.item(i).name, Boolean(rs.rows.item(i).selected))
+                    mylist.appendItem(rs.rows.item(i).rowid, rs.rows.item(i).name, Boolean(rs.rows.item(i).selected), 0)
                 }
             }
         )
@@ -88,7 +88,7 @@ MainView {
         mylist.clear()
     }
 
-    function shoppinglist_addItem(name, selected) {
+    function shoppinglist_addItem(name, selected, price) {
         var result
         // Update DB
         db.transaction(function(tx) {
@@ -96,8 +96,12 @@ MainView {
             }
         )
         // Update ListModel
-        mylist.appendItem(result[1], name, selected)
-        console.log(name, " ", selected)
+        // var rowid = result[1]
+        var rowid = Number(result.insertId);
+        var item = mylist.appendItem(rowid, name, selected, price)
+        getItemPrice(item)
+        console.log("RESULT: ", result)
+        console.log("ADDED: ", result.insertId, " ", name, " ", selected, " ", price)
     }
 
     function shoppinglist_updateSelectionStatus(listIndex, dbRowid, selected) {
@@ -141,15 +145,17 @@ MainView {
             listview.refresh()
         }
 
-        function appendItem(rowid, name, selected) {
+        function appendItem(rowid, name, selected, price) {
             console.log("XXX ", rowid, " ", name, " ", selected)
-            mylist.append(
+            var item = 
                 {
                     "rowid": rowid,
                     "name": name,
-                    "selected": Boolean(selected)
+                    "selected": Boolean(selected),
+                    "price": price
                 }
-            )
+            mylist.append(item)
+            return item
         }
 
         // ListElement {
@@ -243,6 +249,33 @@ MainView {
             onDoAction: shoppinglist_removeSelectedItems()
         }
     }
+
+    /////////////////////////////////////////////////////////////////////////
+    // XMLHttpRequest
+
+    function getItemPrice(item) {
+        print("===> 1 GET item: ", item.name + " " + item.price)
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) {
+                print('HEADERS_RECEIVED');
+            } else if(xhr.readyState === XMLHttpRequest.DONE) {
+                var result = JSON.parse(xhr.responseText.toString());
+                print("===> 2 SET item: ", item.name + " " + item.price + " result=" + result.price);
+                item.price = result.price;
+                print("===> 3 SET item: ", item.name + " " + item.price)
+                // { "name": "itemname",
+                //   "price": value
+                // }
+                // print(result);
+                // print(JSON.stringify(object, null, 2));
+            }
+        }
+        xhr.open("GET", "http://apishoppinglist.codefounders.nl/itemprice.php?itemname=" + encodeURIComponent(item.name));
+        xhr.send();
+    }
+
+
 
     /////////////////////////////////////////////////////////////////////////
     // Define the page elements and their functionality
@@ -365,7 +398,7 @@ MainView {
                             if (textFieldInput.text == "" ) {
                                 return
                             }
-                            shoppinglist_addItem(textFieldInput.text, false)
+                            shoppinglist_addItem(textFieldInput.text, false, 1)
                         }
                 }
             }
@@ -431,6 +464,7 @@ MainView {
                     }
 
                     Text {
+                        id: itemName
                         anchors {
                             left: listCheckBox.right
                             leftMargin: units.gu(1)
@@ -442,6 +476,19 @@ MainView {
                         // [UI] Met deze kleuroptie verandert de tekst automatisch met het systeemthema mee. Dit hoeft alleen expliciet
                         // aangegeven te worden bij het text component, bij een lable gebeurt dit al automatisch.
                         color: theme.palette.normal.baseText
+                    }
+
+                    Text {
+                        anchors {
+                            right: parent.right
+                            rightMargin: units.gu(5)
+                            verticalCenter: parent.verticalCenter
+                        }
+
+                        text: price
+                        font {strikeout: mylist.get(index).selected}
+                        color: theme.palette.normal.baseText
+                        visible: price > 0
                     }
 
                     MouseArea {
