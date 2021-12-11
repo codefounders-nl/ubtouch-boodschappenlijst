@@ -401,6 +401,7 @@ MainView {
                                 return
                             }
                             shoppinglist_addItem(textFieldInput.text, false, 1)
+                            textFieldInput.text = ""
                         }
                 }
             }

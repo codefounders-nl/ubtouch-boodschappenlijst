@@ -1,6 +1,6 @@
 {
     "name": "test.leandro",
-    "description": "Test",
+    "description": "Shoppinglist Trainingsapp",
     "architecture": "@CLICK_ARCH@",
     "title": "Test",
     "hooks": {
@@ -9,7 +9,7 @@
             "desktop":  "TEst.desktop"
         }
     },
-    "version": "1.0.0",
+    "version": "1.0.1",
     "maintainer": "Leandro <leandro@mittere.ne>",
     "framework" : "@CLICK_FRAMEWORK@"
 }
